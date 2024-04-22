@@ -29,23 +29,6 @@ class Crop(object):
             self.x1, self.x2, self.y1, self.y2
         )
 
-class ResNet18(nn.Module):
-    def __init__(self, model):
-        super(ResNet18, self).__init__()
-        self.resnet_layer = nn.Sequential(*list(model.children())[:-1])
-        
-        self.linear1 = nn.Linear(512, 128)
-        self.linear2 = nn.Linear(128, 32)
-        self.linear3 = nn.Linear(32, 2)
-
-    def forward(self, x):
-        x = self.resnet_layer(x)
-        x = x.view(x.size(0), -1)
-        x = nnF.relu(self.linear1(x))
-        x = nnF.relu(self.linear2(x))
-        x = nnF.softmax(self.linear3(x))
-        return x
-
 def main(args):
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
 
@@ -67,12 +50,12 @@ def main(args):
     print("train starts")
     model.train()
 
-    train_in_set = torch.load("The path of the training positives")
-    train_out_set = torch.load("The path of the training negatives")
+    train_in_set = torch.load(args.train_in_path)
+    train_out_set = torch.load(args.train_out_path)
     train_loader = torch.utils.data.DataLoader(train_in_set+train_out_set, batch_size=args.batchsize, shuffle=True)
 
-    test_in_set = torch.load("The path of the testing positives")
-    test_out_set = torch.load("The path of the testing negatives")
+    test_in_set = torch.load(args.test_in_path)
+    test_out_set = torch.load(args.test_out_path)
     test_loader = torch.utils.data.DataLoader(test_in_set+test_out_set, batch_size=args.batchsize, shuffle=False)
 
     for epoch in range(args.epochs):
@@ -133,6 +116,11 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", default=20, type=int, help="Number of epochs")
     parser.add_argument("--batchsize", default=256, type=int, help="The value of batch size")
     parser.add_argument("--lr", default=1e-5, type=float, help="The value of learning rate")
+
+    parser.add_argument("--train-in-path", default="data/train_in.pt", type=str, help="The path of the training positives")
+    parser.add_argument("--train-out-path", default="data/train_out.pt", type=str, help="The path of the training negatives")
+    parser.add_argument("--test-in-path", default="data/test_in.pt", type=str, help="The path of the testing positives")
+    parser.add_argument("--test-out-path", default="data/test_out.pt", type=str, help="The path of the testing negatives")
     args = parser.parse_args()
     
     main(args)
